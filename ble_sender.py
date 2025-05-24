@@ -3,7 +3,7 @@ import bluetooth
 import json
 import logging
 
-TARGET_MAC_ADDRESS = '2C:CF:67:2C:D1:1B'
+TARGET_MAC_ADDRESS = 'A4:75:B9:BB:51:3B'
 client_sock = None
 
 def ensure_connection():
