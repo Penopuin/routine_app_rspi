@@ -92,7 +92,7 @@ def handle_routine(routine_id, minutes, image, disp):
     logging.info(f"Starting routine {routine_id} for {minutes} minute(s)")
     duration = minutes * 60
     disp.ShowImage(image)
-    buzz()
+    buzz(0.1)
     start = time.time()
     while time.time() - start < duration:
         if button1.is_pressed:
@@ -192,6 +192,7 @@ def run_routine_loop():
             if compare_time(start_time):
                 logging.info(f"Routine {routine_id} is due to start")
                 img_path = os.path.join(ICON_PATH, icon)
+                logging.info(f"Routine {routine_id} is due to start")
                 if os.path.exists(img_path):
                     img = Image.open(img_path).resize((240, 240)).rotate(90)
                     Thread(target=run_motor_routine, args=(minutes,)).start()
