@@ -229,7 +229,7 @@ def run_routine_loop():
                 ]
                 data = {"group": group, "routines": routine_list}
                 send_json_via_ble(data)
-            break  # 한 번에 하나만 실행
+            break
         else:
             logging.warning(f"Icon file not found: {img_path}")
 
