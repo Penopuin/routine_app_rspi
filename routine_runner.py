@@ -43,7 +43,6 @@ def get_today_routines():
     """, (today,))
     routines = cursor.fetchall()
     conn.close()
-    logging.info(f"Fetched {len(routines)} routines for today")
     return routines
 
 def get_completed_routines_by_group(group_name):
