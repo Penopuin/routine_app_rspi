@@ -26,11 +26,9 @@ def save_to_db(data):
         routines = data if isinstance(data, list) else [data]
         for r in routines:
             cursor.execute("""
-                INSERT INTO routines (
-                    id, date, start_time, routine_minutes,
-                    icon, routine_name, group_routine_name, completed
-                )
-                VALUES (?, ?, ?, ?, ?, ?, ?, 0)
+                INSERT INTO routines (id, date, start_time, routine_minutes,
+                                      icon, routine_name, group_routine_name)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
             """, (
                 r["id"], r["date"], r["start_time"], r["routine_minutes"],
                 r["icon"], r["routine_name"], r["group_routine_name"]
@@ -39,7 +37,6 @@ def save_to_db(data):
 
     conn.commit()
     conn.close()
-
 
 def receive_bluetooth_data():
     while True:
