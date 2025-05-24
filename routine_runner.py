@@ -66,13 +66,14 @@ def update_routine_status(routine_id, status):
     conn.commit()
     conn.close()
 
-def compare_time(start_time_str):
+def compare_time(start_time_str, tolerance_sec=60):
     now = datetime.now()
     start_time = datetime.strptime(start_time_str, "%H:%M:%S").replace(
         year=now.year, month=now.month, day=now.day
     )
-    logging.info(f"Comparing now: {now.strftime('%H:%M:%S')} with start_time: {start_time.strftime('%H:%M:%S')}")
-    return now >= start_time
+    delta = abs((now - start_time).total_seconds())
+    logging.info(f"Comparing now: {now.strftime('%H:%M:%S')} with start_time: {start_time.strftime('%H:%M:%S')} (Δ={delta:.1f}s)")
+    return delta <= tolerance_sec
 
 def get_minutes_until_next_routine():
     routines = get_today_routines()
