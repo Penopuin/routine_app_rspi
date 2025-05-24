@@ -204,7 +204,7 @@ def run_routine_loop():
             logging.info(f"[Δ 로그] Routine {routine_id} ({name}): now={now.strftime('%H:%M:%S')}, start_time={start_time_str}, Δ={delta:.1f}s")
 
             # 실행 조건 (0초 이상 90초 이하)
-            if 0 <= delta <= 90:
+            if -15 <= delta <= 90:
                 logging.info(f"Routine ({name}) is due to start")
 
                 img_path = os.path.join(ICON_PATH, icon)
