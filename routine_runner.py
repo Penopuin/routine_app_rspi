@@ -87,6 +87,8 @@ def handle_routine(routine_id, minutes, image, disp):
 
     if completed is None:
         logging.info(f"[timeout]: {routine_id}")
+    else:
+        logging.info(f"[exit] 루틴 종료됨: completed = {completed} | {routine_id}")
 
 def run_routine_loop():
     disp = LCD_1inch28()
