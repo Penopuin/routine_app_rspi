@@ -42,7 +42,7 @@ def get_today_routines():
     """, (today,))
     routines = cursor.fetchall()
     conn.close()
-    logging.info(f"Fetched {len(routines)} routines for today")
+    #logging.info(f"Fetched {len(routines)} routines for today")
     return routines
 
 def get_completed_routines_by_group(group_name):
@@ -86,7 +86,7 @@ def get_minutes_until_next_routine():
         if -15 <= delta <= 120:
             times.append(delta)
     remaining = min(times) if times else float('inf')
-    logging.info(f"Minutes until next routine: {remaining}")
+    #logging.info(f"Minutes until next routine: {remaining}")
     return remaining
 
 def handle_routine(routine_id, minutes, image, disp):
