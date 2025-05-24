@@ -71,6 +71,7 @@ def handle_routine(routine_id, minutes, image, disp):
     start_time = time.time()
     completed = None
 
+
     disp.ShowImage(image)
 
     while time.time() - start_time < timeout:
