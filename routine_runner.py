@@ -255,6 +255,9 @@ def run_routine_loop():
                         data = {"group": group, "routines": routine_list}
                         send_json_via_ble(data)
 
+                        disp.clear()
+                        disp.bl_DutyCycle(0)  # 백라이트 꺼짐
+                        logging.info("🌙 모든 루틴 완료. LCD 종료")
                     break  # 한 루틴만 실행 후 루프 재진입
                 else:
                     logging.warning(f"⚠️ Icon file not found: {img_path}")
