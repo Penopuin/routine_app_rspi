@@ -90,26 +90,27 @@ def get_minutes_until_next_routine():
     return remaining
 
 def handle_routine(routine_id, minutes, image, disp):
-    logging.info(f"Starting routine {routine_id} for {minutes} minute(s)")
-    duration = minutes * 60
+    timeout = minutes * 60 + 15  # 루틴 시간 + 여유시간
+    start_time = time.time()
+    completed = False
+
     disp.ShowImage(image)
-    buzz()
-    start = time.time()
-    while time.time() - start < duration:
+
+    while time.time() - start_time < timeout:
         if button1.is_pressed:
-            logging.info(f"Routine {routine_id} marked as completed by button1")
             update_routine_status(routine_id, 1)
-            disp.clear()
-            return
-        elif button2.is_pressed:
-            logging.info(f"Routine {routine_id} marked as failed by button2")
-            update_routine_status(routine_id, 0)
-            disp.clear()
-            return
+            logging.info(f"✅ [수동 완료] 루틴 {routine_id}")
+            completed = True
+            break
+        elif button2.is_pressed or button3.is_pressed:
+            logging.info(f"ℹ️ [입력 감지됨 - 완료 아님] 루틴 {routine_id}")
+            break
+
         time.sleep(0.1)
-    logging.info(f"Routine {routine_id} failed due to timeout")
-    update_routine_status(routine_id, 0)
-    disp.clear()
+
+    if not completed:
+        logging.info(f"⏱️ [시간 만료] 루틴 {routine_id}, 완료 안 됨 (DB 업데이트 없음)")
+
 
 def get_timer_data():
     conn = connect_db()
