@@ -217,18 +217,18 @@ def run_routine_loop():
             )
             delta = (now - start_time).total_seconds()
 
-            # ✅ Δ 로그는 루틴별로 10초에 한 번만 출력
-            if time.time() - last_logged_time[routine_id] > 10:
-                logging.info(
-                    f"[Δ 로그] Routine {routine_id} ({name}): now={now.strftime('%H:%M:%S')}, "
-                    f"start_time={start_time_str}, Δ={delta:.1f}s"
-                )
-                last_logged_time[routine_id] = time.time()
+            # # ✅ Δ 로그는 루틴별로 10초에 한 번만 출력
+            # if time.time() - last_logged_time[routine_id] > 10:
+            #     logging.info(
+            #         f"[Δ 로그] Routine {routine_id} ({name}): now={now.strftime('%H:%M:%S')}, "
+            #         f"start_time={start_time_str}, Δ={delta:.1f}s"
+            #     )
+            #     last_logged_time[routine_id] = time.time()
 
             # ✅ 루틴 실행 조건 충족
             if -15 <= delta <= 90:
                 logging.info(f"Routine ({name}) is due to start")
-
+                buzz(0.2)
                 img_path = os.path.join(ICON_PATH, icon)
                 if os.path.exists(img_path):
                     img = Image.open(img_path).resize((240, 240)).rotate(90)
