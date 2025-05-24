@@ -10,21 +10,6 @@ from motor_control import run_motor_routine, run_motor_timer
 from ble_sender import send_json_via_ble
 from threading import Thread
 
-def get_completed_routines_by_group(group_name):
-    today = datetime.now().strftime("%Y-%m-%d")
-    conn = connect_db()
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT id, start_time, routine_minutes, completed, routine_name
-        FROM routines
-        WHERE date = ? AND group_routine_name = ?
-    """, (today, group_name))
-    routines = cursor.fetchall()
-    conn.close()
-    return routines
-
-
-
 # 경로 설정
 DB_PATH = "/home/pi/LCD_final/routine_db.db"
 ICON_PATH = "/home/pi/APP_icon/"
@@ -60,6 +45,18 @@ def get_today_routines():
     logging.info(f"Fetched {len(routines)} routines for today")
     return routines
 
+def get_completed_routines_by_group(group_name):
+    today = datetime.now().strftime("%Y-%m-%d")
+    conn = connect_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT id, start_time, routine_minutes, completed, routine_name
+        FROM routines
+        WHERE date = ? AND group_routine_name = ?
+    """, (today, group_name))
+    routines = cursor.fetchall()
+    conn.close()
+    return routines
 
 def update_routine_status(routine_id, status):
     logging.info(f"Updating routine {routine_id} status to {status}")

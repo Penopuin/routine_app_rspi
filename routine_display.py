@@ -7,7 +7,7 @@ import logging
 import sqlite3
 from datetime import datetime, time as dtime, timedelta
 from PIL import Image
-sys.path.append("..")
+sys.path.append("../../../Downloads")
 from lib import LCD_1inch28
 
 # Raspberry Pi pin configuration
