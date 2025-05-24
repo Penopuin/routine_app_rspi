@@ -191,13 +191,13 @@ def run_routine_loop():
     logging.info("Routine runner loop started")
 
     executed_ids = set()  # ✅ 이미 실행한 루틴 ID 저장
-    last_logged_time = defaultdict(lambda: 0)  # ✅ 루틴별 마지막 로그 출력 시간
-    last_fetch_count = -1  # ✅ 루틴 개수가 바뀌었을 때만 로그 출력
+    last_logged_time = defaultdict(lambda: 0)  # ✅ 루틴별 로그 출력 조절
+    last_fetch_count = -1  # ✅ 루틴 개수 변화 체크
 
     while True:
         routines = get_today_routines()
 
-        # ✅ 루틴 개수 변화가 있을 때만 fetch 로그 출력
+        # ✅ 루틴 개수가 바뀌었을 때만 fetch 로그 출력
         if len(routines) != last_fetch_count:
             logging.info(f"📦 Fetched {len(routines)} routines for today")
             last_fetch_count = len(routines)
@@ -207,44 +207,41 @@ def run_routine_loop():
         for routine in routines:
             routine_id, start_time_str, icon, minutes, name, group = routine
 
-            # ✅ 이미 실행한 루틴은 건너뜀
+            # ✅ 이미 실행한 루틴은 다시 실행하지 않음
             if routine_id in executed_ids:
                 continue
 
-            # 시작 시간 파싱 및 Δ 계산
             start_time = datetime.strptime(start_time_str, "%H:%M:%S").replace(
                 year=now.year, month=now.month, day=now.day
             )
             delta = (now - start_time).total_seconds()
 
-            # # ✅ Δ 로그는 루틴별로 10초에 한 번만 출력
-            # if time.time() - last_logged_time[routine_id] > 10:
-            #     logging.info(
-            #         f"[Δ 로그] Routine {routine_id} ({name}): now={now.strftime('%H:%M:%S')}, "
-            #         f"start_time={start_time_str}, Δ={delta:.1f}s"
-            #     )
-            #     last_logged_time[routine_id] = time.time()
+            # ✅ Δ 로그는 루틴별 10초에 한 번만 출력
+            if time.time() - last_logged_time[routine_id] > 10:
+                logging.info(
+                    f"[Δ 로그] Routine {routine_id} ({name}): now={now.strftime('%H:%M:%S')}, "
+                    f"start_time={start_time_str}, Δ={delta:.1f}s"
+                )
+                last_logged_time[routine_id] = time.time()
 
-            # ✅ 루틴 실행 조건 충족
             if -15 <= delta <= 90:
                 logging.info(f"Routine ({name}) is due to start")
-                buzz(0.2)
+
+                buzz(0.2)  # ✅ 루틴 시작 시 부저 울리기
+
                 img_path = os.path.join(ICON_PATH, icon)
                 if os.path.exists(img_path):
                     img = Image.open(img_path).resize((240, 240)).rotate(90)
 
-                    # 모터 동작 별도 스레드로 실행
                     Thread(target=run_motor_routine, args=(minutes,)).start()
 
-                    # 루틴 실행 (UI + 버튼 입력)
                     handle_routine(routine_id, minutes, img, disp)
 
-                    # ✅ 실행한 루틴 기록
-                    executed_ids.add(routine_id)
+                    executed_ids.add(routine_id)  # ✅ 실행된 루틴 기록
 
-                    # ✅ 동일 그룹이 모두 완료되면 BLE 전송
+                    # ✅ 그룹 루틴이 모두 실행되었으면 BLE 전송 + LCD 종료
                     group_routines = get_completed_routines_by_group(group)
-                    if all(r[3] in (0, 1) for r in group_routines):
+                    if all(r[0] in executed_ids for r in group_routines):
                         routine_list = [
                             {
                                 "id": r[0], "start_time": r[1], "minutes": r[2],
@@ -252,15 +249,15 @@ def run_routine_loop():
                             }
                             for r in group_routines
                         ]
-                        data = {"group": group, "routines": routine_list}
-                        send_json_via_ble(data)
+                        send_json_via_ble({"group": group, "routines": routine_list})
 
                         disp.clear()
-                        disp.bl_DutyCycle(0)  # 백라이트 꺼짐
+                        disp.bl_DutyCycle(0)
+                        logging.info("all routines were closed. LCD OFF")
 
-                    break  # 한 루틴만 실행 후 루프 재진입
+                    break
                 else:
-                    logging.warning(f"⚠️ Icon file not found: {img_path}")
+                    logging.warning(f"no icon file: {img_path}")
 if __name__ == "__main__":
     try:
         run_routine_loop()
