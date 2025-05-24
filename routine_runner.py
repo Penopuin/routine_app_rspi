@@ -72,7 +72,7 @@ def compare_time(start_time_str, tolerance_sec=90):
         year=now.year, month=now.month, day=now.day
     )
     delta = (now - start_time).total_seconds()
-    logging.info(f"Comparing now: {now.strftime('%H:%M:%S')} with start_time: {start_time.strftime('%H:%M:%S')} (Δ={delta:.1f}s)")
+    #logging.info(f"Comparing now: {now.strftime('%H:%M:%S')} with start_time: {start_time.strftime('%H:%M:%S')} (Δ={delta:.1f}s)")
     return 0 <= delta <= tolerance_sec
 
 def get_minutes_until_next_routine():
@@ -180,6 +180,9 @@ def timer_loop(disp):
                 run_repeating_timer(timer_id, minutes, rest, repeat_count, disp, image)
                 return
 
+executed_routines_today = set()
+last_checked_day = datetime.now().day
+
 def run_routine_loop():
     disp = LCD_1inch28()
     disp.Init()
@@ -192,48 +195,52 @@ def run_routine_loop():
         now = datetime.now()
 
         for routine in routines:
-            routine_id, start_time_str, icon, minutes, name, group = routine
+    if datetime.now().day != last_checked_day:
+        executed_routines_today.clear()
+        last_checked_day = datetime.now().day
 
-            # Δ 계산
-            start_time = datetime.strptime(start_time_str, "%H:%M:%S").replace(
-                year=now.year, month=now.month, day=now.day
-            )
-            delta = (now - start_time).total_seconds()
+    routine_id, start_time_str, icon, minutes, name, group = routine
 
-            # 모든 루틴의 Δ 출력
-            logging.info(f"[Δ 로그] Routine {routine_id} ({name}): now={now.strftime('%H:%M:%S')}, start_time={start_time_str}, Δ={delta:.1f}s")
+    if routine_id in executed_routines_today:
+        continue
 
-            # 실행 조건 (0초 이상 90초 이하)
-            if 0 <= delta <= 90:
-                logging.info(f"Routine ({name}) is due to start")
+    # Δ 계산
+    start_time = datetime.strptime(start_time_str, "%H:%M:%S").replace(
+        year=now.year, month=now.month, day=now.day
+    )
+    delta = (now - start_time).total_seconds()
 
-                img_path = os.path.join(ICON_PATH, icon)
-                if os.path.exists(img_path):
-                    img = Image.open(img_path).resize((240, 240)).rotate(90)
-                    Thread(target=run_motor_routine, args=(minutes,)).start()
-                    handle_routine(routine_id, minutes, img, disp)
+    # 실행 조건 (0초 이상 90초 이하)
+    if 0 <= delta <= 90:
+        logging.info(f"Routine ({name}) is due to start")
 
-                    # 그룹 루틴 완료 시 BLE 전송
-                    group_routines = get_completed_routines_by_group(group)
-                    if all(r[3] in (0, 1) for r in group_routines):
-                        routine_list = [
-                            {"id": r[0], "start_time": r[1], "minutes": r[2],
-                             "completed": r[3], "name": r[4]}
-                            for r in group_routines
-                        ]
-                        data = {"group": group, "routines": routine_list}
-                        send_json_via_ble(data)
-                    break  # 한 번에 하나만 실행
-                else:
-                    logging.warning(f"Icon file not found: {img_path}")
+        img_path = os.path.join(ICON_PATH, icon)
+        if os.path.exists(img_path):
+            img = Image.open(img_path).resize((240, 240)).rotate(90)
+            Thread(target=run_motor_routine, args=(minutes,)).start()
+            handle_routine(routine_id, minutes, img, disp)
 
+            # 그룹 루틴 완료 시 BLE 전송
+            group_routines = get_completed_routines_by_group(group)
+            if all(r[3] in (0, 1) for r in group_routines):
+                routine_list = [
+                    {"id": r[0], "start_time": r[1], "minutes": r[2],
+                     "completed": r[3], "name": r[4]}
+                    for r in group_routines
+                ]
+                data = {"group": group, "routines": routine_list}
+                send_json_via_ble(data)
+            break  # 한 번에 하나만 실행
         else:
-            # 실행할 루틴이 없으면 timer loop 진입
-            if get_minutes_until_next_routine() > 5:
-                logging.info("Entering timer loop")
-                timer_loop(disp)
+            logging.warning(f"Icon file not found: {img_path}")
 
-        time.sleep(1)
+else:
+# 실행할 루틴이 없으면 timer loop 진입
+if get_minutes_until_next_routine() > 5:
+    logging.info("Entering timer loop")
+    timer_loop(disp)
+
+time.sleep(1)
 
 
 if __name__ == "__main__":
