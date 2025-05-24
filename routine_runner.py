@@ -195,14 +195,13 @@ def run_routine_loop():
         now = datetime.now()
 
         for routine in routines:
+    routine_id, start_time_str, icon, minutes, name, group = routine
     if datetime.now().day != last_checked_day:
         executed_routines_today.clear()
         last_checked_day = datetime.now().day
-
-    routine_id, start_time_str, icon, minutes, name, group = routine
-
     if routine_id in executed_routines_today:
         continue
+    routine_id, start_time_str, icon, minutes, name, group = routine
 
     # Δ 계산
     start_time = datetime.strptime(start_time_str, "%H:%M:%S").replace(
