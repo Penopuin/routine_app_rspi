@@ -180,40 +180,30 @@ def timer_loop(disp):
                 return
 
 def run_routine_loop():
-    disp = LCD_1inch28()
-    disp.Init()
-    disp.clear()
-    disp.bl_DutyCycle(50)
-    logging.info("Routine runner loop started")
     while True:
-        routines = get_today_routines()
+        now = datetime.now().strftime("%H:%M")
+
+        routines = get_today_routines()  # completed = 0인 루틴들
+
         for routine in routines:
-            routine_id, start_time, icon, minutes, name, group = routine
-            if compare_time(start_time):
-                logging.info(f"Routine {routine_id} is due to start")
-                img_path = os.path.join(ICON_PATH, icon)
-                logging.info(f"Routine {routine_id} is due to start")
-                if os.path.exists(img_path):
-                    img = Image.open(img_path).resize((240, 240)).rotate(90)
-                    Thread(target=run_motor_routine, args=(minutes,)).start()
-                    handle_routine(routine_id, minutes, img, disp)
-                    group_routines = get_completed_routines_by_group(group)
-                    if all(r[3] in (0, 1) for r in group_routines):  # 모든 루틴이 완료/실패 처리된 경우
-                        routine_list = [
-                            {"id": r[0], "start_time": r[1], "minutes": r[2],
-                             "completed": r[3], "name": r[4]}
-                            for r in group_routines
-                        ]
-                        data = {"group": group, "routines": routine_list}
-                        send_json_via_ble(data)
-                    break
-                else:
-                    logging.warning(f"Icon file not found: {img_path}")
-        else:
-            if get_minutes_until_next_routine() > 5:
-                logging.info("Entering timer loop")
-                timer_loop(disp)
-        time.sleep(1)
+            routine_time = routine[1][:5]  # start_time 문자열 'HH:MM:SS' → 'HH:MM'
+            if routine_time == now:
+                logging.info(f"[RUNNER] 루틴 실행 시간 도달: {routine}")
+                run_motor_routine(routine)  # 실제 루틴 실행 함수 호출
+                mark_routine_completed(routine[0])  # 실행 완료 표시
+            else:
+                logging.debug(f"[RUNNER] 시간 불일치: {routine_time} != {now}")
+
+        time.sleep(30)  # 매 30초 간격으로 체크 (너무 자주하면 부하)
+
+def mark_routine_completed(routine_id):
+    conn = connect_db()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE routines SET completed = 1 WHERE id = ?", (routine_id,))
+    conn.commit()
+    conn.close()
+    logging.info(f"[DB] 루틴 ID={routine_id} 완료로 표시됨")
+
 
 if __name__ == "__main__":
     try:
