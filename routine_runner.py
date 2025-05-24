@@ -180,6 +180,8 @@ def timer_loop(disp):
                 run_repeating_timer(timer_id, minutes, rest, repeat_count, disp, image)
                 return
 
+from collections import defaultdict
+
 def run_routine_loop():
     disp = LCD_1inch28()
     disp.Init()
@@ -188,6 +190,7 @@ def run_routine_loop():
     logging.info("Routine runner loop started")
 
     executed_ids = set()  # ✅ 이미 실행된 루틴 ID 저장
+    last_logged_time = defaultdict(lambda: 0)  # ✅ 루틴별 마지막 로그 출력 시간 기록용
 
     while True:
         routines = get_today_routines()
@@ -196,20 +199,25 @@ def run_routine_loop():
         for routine in routines:
             routine_id, start_time_str, icon, minutes, name, group = routine
 
-            # ✅ 이미 실행한 루틴이면 무시
+            # ✅ 이미 실행한 루틴은 다시 실행하지 않음
             if routine_id in executed_ids:
                 continue
 
+            # 시작 시간 → datetime으로 변환
             start_time = datetime.strptime(start_time_str, "%H:%M:%S").replace(
                 year=now.year, month=now.month, day=now.day
             )
             delta = (now - start_time).total_seconds()
 
-            logging.info(
-                f"[Δ 로그] Routine {routine_id} ({name}): now={now.strftime('%H:%M:%S')}, "
-                f"start_time={start_time_str}, Δ={delta:.1f}s"
-            )
+            # ✅ [Δ 로그]는 10초마다 한 번만 출력되도록 제한
+            if time.time() - last_logged_time[routine_id] > 10:
+                logging.info(
+                    f"[Δ 로그] Routine {routine_id} ({name}): now={now.strftime('%H:%M:%S')}, "
+                    f"start_time={start_time_str}, Δ={delta:.1f}s"
+                )
+                last_logged_time[routine_id] = time.time()
 
+            # 루틴 실행 조건: 현재 시간이 시작 시간 ± 조건 안에 있을 때
             if -15 <= delta <= 90:
                 logging.info(f"Routine ({name}) is due to start")
 
@@ -217,13 +225,16 @@ def run_routine_loop():
                 if os.path.exists(img_path):
                     img = Image.open(img_path).resize((240, 240)).rotate(90)
 
+                    # 모터 루틴 백그라운드 실행
                     Thread(target=run_motor_routine, args=(minutes,)).start()
+
+                    # 실제 루틴 실행 및 UI 처리
                     handle_routine(routine_id, minutes, img, disp)
 
-                    # ✅ 실행한 루틴 기록
+                    # ✅ 이 루틴은 이미 실행된 것으로 표시
                     executed_ids.add(routine_id)
 
-                    # ✅ BLE 전송 조건은 그대로 유지
+                    # ✅ 동일 그룹 루틴이 모두 완료된 경우 BLE 전송
                     group_routines = get_completed_routines_by_group(group)
                     if all(r[3] in (0, 1) for r in group_routines):
                         routine_list = [
@@ -235,10 +246,10 @@ def run_routine_loop():
                         ]
                         data = {"group": group, "routines": routine_list}
                         send_json_via_ble(data)
-                    break
+
+                    break  # 한 루틴만 처리하고 다음 루프에서 다시 확인
                 else:
                     logging.warning(f"Icon file not found: {img_path}")
-
 
 if __name__ == "__main__":
     try:
