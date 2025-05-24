@@ -99,17 +99,17 @@ def handle_routine(routine_id, minutes, image, disp):
     while time.time() - start_time < timeout:
         if button1.is_pressed:
             update_routine_status(routine_id, 1)
-            logging.info(f"✅ [수동 완료] 루틴 {routine_id}")
+            logging.info(f"[button1]completed = 1 | {routine_id}")
             completed = True
             break
         elif button2.is_pressed or button3.is_pressed:
-            logging.info(f"ℹ️ [입력 감지됨 - 완료 아님] 루틴 {routine_id}")
+            logging.info(f"[button2]completed = 0 | {routine_id}")
             break
 
         time.sleep(0.1)
 
     if not completed:
-        logging.info(f"⏱️ [시간 만료] 루틴 {routine_id}, 완료 안 됨 (DB 업데이트 없음)")
+        logging.info(f"[timeout]: {routine_id}")
 
 
 def get_timer_data():
@@ -257,7 +257,7 @@ def run_routine_loop():
 
                         disp.clear()
                         disp.bl_DutyCycle(0)  # 백라이트 꺼짐
-                        logging.info("🌙 모든 루틴 완료. LCD 종료")
+
                     break  # 한 루틴만 실행 후 루프 재진입
                 else:
                     logging.warning(f"⚠️ Icon file not found: {img_path}")
