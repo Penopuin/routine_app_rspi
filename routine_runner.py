@@ -120,7 +120,7 @@ def run_routine_loop():
             )
             delta = (now - start_time).total_seconds()
 
-            if -15 <= delta <= 60:
+            if -15 <= delta <= 15:
                 logging.info(f"Routine ({name}) is due to start")
 
                 buzz(0.2)

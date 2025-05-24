@@ -5,7 +5,6 @@ import time
 import logging
 
 DB_PATH = "/home/pi/LCD_final/routine_db.db"
-
 logging.basicConfig(level=logging.INFO)
 
 def save_to_db(data):
@@ -50,23 +49,29 @@ def receive_bluetooth_data():
             client_sock, address = server_sock.accept()
             logging.info(f"[BLE] 연결됨: {address}")
 
-            data = client_sock.recv(4096).decode('utf-8')
-            logging.info(f"[BLE] 수신 데이터: {data}")
+            while True:
+                try:
+                    data = client_sock.recv(4096).decode('utf-8')
+                    if not data:
+                        logging.info("[BLE] 클라이언트 연결 종료됨")
+                        break
 
-            json_data = json.loads(data)
+                    logging.info(f"[BLE] 수신 데이터: {data}")
+                    json_data = json.loads(data)
 
-            if isinstance(json_data, list):
-                for entry in json_data:
-                    save_to_db(entry)
-            else:
-                save_to_db(json_data)
+                    if isinstance(json_data, list):
+                        for entry in json_data:
+                            save_to_db(entry)
+                    else:
+                        save_to_db(json_data)
+
+                except Exception as e:
+                    logging.error(f"[BLE 내부 수신 오류] {e}")
+                    break
+
+            client_sock.close()
+            server_sock.close()
 
         except Exception as e:
-            logging.error(f"[BLE] 오류 발생: {e}")
+            logging.error(f"[BLE 연결 오류] {e}")
             time.sleep(1)
-        finally:
-            try:
-                client_sock.close()
-                server_sock.close()
-            except:
-                pass
