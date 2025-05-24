@@ -10,6 +10,7 @@ from motor_control import run_motor_routine, run_motor_timer
 from ble_sender import send_json_via_ble
 from threading import Thread
 
+
 # 경로 설정
 DB_PATH = "/home/pi/LCD_final/routine_db.db"
 ICON_PATH = "/home/pi/APP_icon/"
